@@ -1,5 +1,5 @@
 {
-  "homepage": "https://UdeeshaBandara.github.io/Ensol-web",
+
   "name": "Ensol Admin",
   "version": "0.1.0",
   "private": true,
@@ -23,7 +23,6 @@
     "react-router-dom": "^6.3.0",
     "react-scripts": "4.0.3",
     "react-toastify": "^9.0.1",
-    "sweetalert2": "^11.4.17",
     "sweetalert2-react-content": "^5.0.0",
     "web-vitals": "^1.1.2"
   },
