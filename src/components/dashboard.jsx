@@ -1,0 +1,439 @@
+import React, {Component} from "react";
+import axios from "axios";
+
+import {Button, Nav, NavDropdown} from 'react-bootstrap';
+import "../vendors/ti-icons/css/themify-icons.css";
+import "../vendors/base/vendor.bundle.base.css";
+import "../css/style.css";
+import logo from "../images/company_logo.png";
+
+import DateFnsUtils from '@date-io/date-fns';
+import {
+    MuiPickersUtilsProvider,
+    KeyboardDatePicker,
+} from '@material-ui/pickers';
+import {Link} from "react-router-dom";
+
+class Dashboard extends Component {
+    state = {
+        orders: [],
+        startDate: new Date(),
+        endDate: new Date(),
+        filteredOrders: [],
+        repair_count: 0,
+        total_machines: 0,
+        rented_machines: 0,
+        user_count: 0,
+        filterText: "Filter",
+        filterResetText: "Reset"
+
+    };
+
+    handleRowClick = (id) => {
+        window.location.href = "/orders/search?id=" + id;
+    }
+
+
+
+    setStartDate = (sdate) => {
+        this.setState({startDate: sdate})
+    }
+
+    setEndDate = (edate) => {
+        this.setState({endDate: edate})
+    }
+
+
+    handleDateChange = (date) => {
+        this.state.startDate = date;
+    }
+
+    filterHandler = async (e) => {
+        e.preventDefault();
+
+        let orderFilter = {
+            endDate: this.state.endDate,
+            startDate: this.state.startDate
+        };
+        let {data} = await axios.post("https://ensolapi.herokuapp.com/admin/order/filter", orderFilter, {
+            headers: {
+                "Authorization": "Bearer " + sessionStorage.getItem("token")
+            },
+        });
+
+        let filteredList = data.data.orders.map((order) => {
+            if (order.orderStatus == 0) {
+                order.orderStatus = "Cancelled";
+                order.color = "#F44336";
+            } else if (order.orderStatus == 1) {
+                order.orderStatus = "Completed";
+                order.color = "#4CAF50";
+            } else if (order.orderStatus == 2) {
+                order.orderStatus = "Accepted";
+                order.color = "#3F51B5";
+            } else if (order.orderStatus == 3) {
+                order.orderStatus = "Pending";
+                order.color = "#FF5722";
+            }
+            return {
+                id: order.id,
+                username: order.user.name,
+                address: order.user.address,
+                telephone: order.user.telephone,
+                price: order.price,
+                status: order.orderStatus,
+                color: order.color
+            };
+        });
+
+        this.setState({filteredOrders: filteredList})
+
+    }
+    filterReset = async (e) => {
+        e.preventDefault();
+
+
+        this.setState({filteredOrders: this.state.orders})
+
+    }
+    logOut = () => {
+
+        sessionStorage.clear();
+        window.location.href = "/";
+
+    }
+
+
+
+
+    render() {
+
+        return (
+            <div class="container-scroller">
+
+                <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
+
+                    <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center">
+                        <img style={{width: 70, height: 70}} src={logo}/>
+                    </div>
+                    <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
+
+
+                        <ul class="navbar-nav navbar-nav-right">
+                            <li class="nav-item nav-profile dropdown">
+                                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" id="profileDropdown">
+                                    <Nav>
+                                        <NavDropdown title={sessionStorage.getItem("email")}>
+
+
+                                            <NavDropdown.Item onClick={this.logOut}>Logout</NavDropdown.Item>
+
+
+                                        </NavDropdown>
+                                    </Nav>
+
+                                </a>
+                            </li>
+                        </ul>
+                        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button"
+                                data-toggle="offcanvas">
+                            <span class="ti-view-list"/>
+                        </button>
+                    </div>
+                </nav>
+                <div class="container-fluid page-body-wrapper">
+                    <nav class="sidebar sidebar-offcanvas" id="sidebar">
+                        <ul class="nav">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/dashboard">
+                                    <i class="ti-shield menu-icon"/>
+                                    <span class="menu-title">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="collapse" href="/machine" aria-expanded="false"
+                                   aria-controls="ui-basic">
+                                    <i class="ti-plug menu-icon"/>
+                                    <span class="menu-title">Machines</span>
+
+                                </a>
+
+                            </li>
+                            <li class="nav-item">
+                                <Link class="nav-link" to="/repairs">
+                                    <i className="ti-settings menu-icon"/>
+                                    <span class="menu-title">Repairs</span>
+                                </Link>
+
+                            </li>
+                        </ul>
+                    </nav>
+                    <div class="main-panel">
+                        <div class="content-wrapper">
+                            <div class="row">
+                                <div class="col-md-12 grid-margin">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h4 class="font-weight-bold mb-0">Dashboard</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+
+                                <div class="col-md-3 grid-margin stretch-card">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <p class="card-title text-md-center text-xl-left">Total Machines</p>
+                                            <div
+                                                class="d-flex flex-wrap justify-content-between justify-content-md-center justify-content-xl-between align-items-center">
+                                                <h3 class="mb-0 mb-md-2 mb-xl-0 order-md-1 order-xl-0">{this.state.total_machines}</h3>
+
+
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"
+                                                     fill="currentColor" class="bi bi-bag-check-fill"
+                                                     viewBox="0 0 16 16">
+                                                    <path fill-rule="evenodd"
+                                                          d="M10.5 3.5a2.5 2.5 0 0 0-5 0V4h5v-.5zm1 0V4H15v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4h3.5v-.5a3.5 3.5 0 1 1 7 0zm-.646 5.354a.5.5 0 0 0-.708-.708L7.5 10.793 6.354 9.646a.5.5 0 1 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0l3-3z"/>
+                                                </svg>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 grid-margin stretch-card">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <p class="card-title text-md-center text-xl-left">Rented Machines</p>
+                                            <div
+                                                class="d-flex flex-wrap justify-content-between justify-content-md-center justify-content-xl-between align-items-center">
+                                                <h3 class="mb-0 mb-md-2 mb-xl-0 order-md-1 order-xl-0">{this.state.rented_machines}</h3>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"
+                                                     fill="currentColor" class="bi bi-bag-dash-fill"
+                                                     viewBox="0 0 16 16">
+                                                    <path fill-rule="evenodd"
+                                                          d="M10.5 3.5a2.5 2.5 0 0 0-5 0V4h5v-.5zm1 0V4H15v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4h3.5v-.5a3.5 3.5 0 1 1 7 0zM6 9.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1H6z"/>
+                                                </svg>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 grid-margin stretch-card">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <p class="card-title text-md-center text-xl-left">Repairs Count</p>
+                                            <div
+                                                class="d-flex flex-wrap justify-content-between justify-content-md-center justify-content-xl-between align-items-center">
+                                                <h3 class="mb-0 mb-md-2 mb-xl-0 order-md-1 order-xl-0">{this.state.repair_count}</h3>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"
+                                                     fill="currentColor" class="bi bi-bag-x-fill" viewBox="0 0 16 16">
+                                                    <path fill-rule="evenodd"
+                                                          d="M10.5 3.5a2.5 2.5 0 0 0-5 0V4h5v-.5zm1 0V4H15v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4h3.5v-.5a3.5 3.5 0 1 1 7 0zM6.854 8.146a.5.5 0 1 0-.708.708L7.293 10l-1.147 1.146a.5.5 0 0 0 .708.708L8 10.707l1.146 1.147a.5.5 0 0 0 .708-.708L8.707 10l1.147-1.146a.5.5 0 0 0-.708-.708L8 9.293 6.854 8.146z"/>
+                                                </svg>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 grid-margin stretch-card">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <p class="card-title text-md-center text-xl-left">User Count</p>
+                                            <div
+                                                class="d-flex flex-wrap justify-content-between justify-content-md-center justify-content-xl-between align-items-center">
+                                                <h3 class="mb-0 mb-md-2 mb-xl-0 order-md-1 order-xl-0">{this.state.user_count}</h3>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"
+                                                     fill="currentColor" class="bi bi-people-fill" viewBox="0 0 16 16">
+                                                    <path
+                                                        d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                                                    <path fill-rule="evenodd"
+                                                          d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z"/>
+                                                    <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
+                                                </svg>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div style={{textAlign: 'right'}}>
+                                <MuiPickersUtilsProvider utils={DateFnsUtils}>
+                                    <KeyboardDatePicker
+                                        disableToolbar
+                                        variant="inline"
+                                        format="MM/dd/yyyy"
+                                        margin="normal"
+                                        id="date-picker-inline"
+                                        label="Start Date"
+                                        value={this.state.startDate}
+                                        onChange={date => this.setStartDate(date)}
+                                        KeyboardButtonProps={{
+                                            'aria-label': 'change date',
+                                        }}
+                                    />
+                                </MuiPickersUtilsProvider>
+
+                                <MuiPickersUtilsProvider utils={DateFnsUtils}>
+                                    <KeyboardDatePicker
+                                        disableToolbar
+                                        variant="inline"
+                                        format="MM/dd/yyyy"
+                                        margin="normal"
+                                        id="date-picker-inline2"
+                                        label="End Date"
+                                        value={this.state.endDate}
+                                        onChange={date => this.setEndDate(date)}
+                                        KeyboardButtonProps={{
+                                            'aria-label': 'change date',
+                                        }}
+                                    />
+                                </MuiPickersUtilsProvider>
+
+                                <button style={{marginTop: 15, marginLeft: 15, color: 'white'}} type="submit"
+                                        class="btn btn-warning me-2"
+                                        onClick={this.filterHandler}>{this.state.filterText}</button>
+
+                                <button style={{marginTop: 15, color: 'white'}} type="submit"
+                                        class="btn btn-danger"
+                                        onClick={this.filterReset}>{this.state.filterResetText}</button>
+
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12 grid-margin stretch-card">
+                                    <div class="card position-relative">
+                                        <div class="card-body">
+                                            <p class="card-title mb-0">Orders</p>
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>Order Id</th>
+                                                        <th>Customer</th>
+                                                        <th>Customer address</th>
+                                                        <th>Telephone</th>
+                                                        <th>Price</th>
+                                                        <th>Order status</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+
+                                                    {this.state.filteredOrders ? this.state.filteredOrders.map((order) => (
+                                                        <tr key={order.id}
+                                                            onClick={() => this.handleRowClick(order.id)}>
+                                                            <td>{order.id}</td>
+                                                            <td>{order.username}</td>
+                                                            <td>{order.address}</td>
+                                                            <td>{order.telephone}</td>
+                                                            <td>{order.price}</td>
+                                                            <td><Button style={{
+                                                                backgroundColor: order.color,
+                                                                borderColor: order.color,
+                                                                color: 'white',
+                                                                width: '125px'
+                                                            }}>{order.status}</Button></td>
+                                                        </tr>
+                                                    )) : null}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <footer class="footer">
+                            <div class="d-sm-flex justify-content-center justify-content-sm-between">
+                                <span class="text-muted text-center text-sm-left d-block d-sm-inline-block">Copyright © RWP 2022</span>
+                            </div>
+                        </footer>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+
+    async componentDidMount() {
+        let {data} = await axios.get("https://ensolapi.herokuapp.com/admin/dashboardValues", {
+            headers: {
+                "Authorization": "Bearer " + sessionStorage.getItem("token")
+            },
+        });
+
+        let allOrders = data.data.orders.map((order) => {
+            if (order.orderStatus == 0) {
+                order.orderStatus = "Cancelled";
+                order.color = "#F44336";
+            } else if (order.orderStatus == 1) {
+                order.orderStatus = "Completed";
+                order.color = "#4CAF50";
+            } else if (order.orderStatus == 2) {
+                order.orderStatus = "Accepted";
+                order.color = "#3F51B5";
+            } else if (order.orderStatus == 3) {
+                order.orderStatus = "Pending";
+                order.color = "#FF5722";
+            }
+            return {
+                id: order.id,
+                username: order.user.name,
+                address: order.user.address,
+                telephone: order.user.telephone,
+                price: order.price,
+                status: order.orderStatus,
+                color: order.color
+            };
+        });
+
+        let allRepairs = data.data.repairs.map((repair) => {
+            if (repair.status == 0) {
+                repair.status = "Cancelled";
+                repair.color = "#F44336";
+            } else if (repair.status == 1) {
+                repair.status = "Completed";
+                repair.color = "#4CAF50";
+            } else if (repair.status == 2) {
+                repair.status = "Accepted";
+                repair.color = "#3F51B5";
+            } else if (repair.status == 3) {
+                repair.status = "Pending";
+                repair.color = "#FF5722";
+            }
+            return {
+                id: repair.id,
+                description: repair.description,
+                username: repair.order.user.name,
+                address: repair.order.user.address,
+                telephone: repair.order.user.telephone,
+                status: repair.status,
+                color: repair.color
+            };
+        });
+
+        this.setState({
+            orders: allOrders,
+            filteredOrders: allOrders,
+            repairs: allRepairs,
+            filteredRepairs: allRepairs,
+            repair_count: data.data.top_values.repair_count,
+            total_machines: data.data.top_values.total_machines,
+            rented_machines: data.data.top_values.rented_machines,
+            user_count: data.data.top_values.user_count
+        });
+    }
+}
+
+window.addEventListener("pageshow", function (event) {
+    var historyTraversal = event.persisted || (typeof window.performance != "undefined" && window.performance.navigation.type === 2);
+    if (historyTraversal) {
+        window.location.reload();
+    }
+});
+
+export default Dashboard;
